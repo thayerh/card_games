@@ -1,0 +1,9 @@
+"""Constants for personal.card_games.war"""
+
+NUM_PLAYERS: int = 2
+TOTAL_CARDS: int = 52
+NUMCARDSPER: int = int(TOTAL_CARDS/NUM_PLAYERS)
+
+SIM_LENGTH: int = 1000
+
+INFINITE_STOP: int = 5000
