@@ -1,0 +1,15 @@
+"""Constants for personal.card_games.blackjack"""
+
+NUM_PLAYERS: int = 1
+# Excludes dealer
+TOTAL_CARDS: int = 52
+NUMCARDSPER: int = 2
+
+DEALER_BANKROLL: int = 1000000
+PLAYER_BANKROLL: int = 1000
+
+BET_SIZE: int = 100
+
+SIM_LENGTH: int = 1000000000
+
+SPLIT_CONSTANT: int = 27
