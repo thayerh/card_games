@@ -1,0 +1,44 @@
+from personal.card_games.deck import *
+import time
+
+"""Calculates what percent of the time the same hand is dealt twice in NLH"""
+
+SIM_NUM: int = 100000
+
+class Sim:
+    both_hands: List[List[Cards]] = [[], []]
+    result: bool = False
+
+
+    def deal_new(self) -> None:
+        self.both_hands[0] = GameSetup(2, 1).hands[0]
+        self.both_hands[1] = GameSetup(2, 1).hands[0]
+    
+
+    def test(self) -> None:
+        a = self.both_hands[0][0]
+        b = self.both_hands[0][1]
+        c = self.both_hands[1][0]
+        d = self.both_hands[1][1]
+        if ((a.number == c.number and a.suit == c.suit) or (a.number == d.number and a.suit == d.suit)) and ((b.number == c.number and b.suit == c.suit) or (b.number == d.number and b.suit == d.suit)):
+            self.result = True
+        else:    
+            self.result = False
+        
+
+def main() -> None:
+    game = Sim()
+    i: int = 0
+    start = time.time()
+    for _ in range(0, SIM_NUM):
+        game.deal_new()
+        game.test()
+        if game.result:
+            i += 1
+    end = time.time()
+    print(f"Simulation took {end - start} seconds")
+    print(f"Same hand dealt consecuatively {i} times. {round(((i / SIM_NUM) * 100), 4)}%")
+    
+
+if __name__ == "__main__":
+    main()
