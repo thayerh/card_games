@@ -1,0 +1,73 @@
+from random import randint
+from typing import Dict, List
+from random import randint
+
+
+
+class Cards:
+    suit: str
+    number: int
+    card: Dict[int, str] = {}
+
+    def __init__(self, number: int, i: int, suits: List[str] = ["spades", "clubs", "hearts", "diamonds"]):
+        self.suit = suits[i]
+        self.number = number
+
+    
+    def __repr__(self) -> str:
+        if self.number == 11:
+            return f"Jack of {self.suit}"
+        elif self.number == 12:
+            return f"Queen of {self.suit}"
+        elif self.number == 13:
+            return f"King of {self.suit}"
+        elif self.number == 14 or self.number == 1:
+            return f"Ace of {self.suit}"
+        else:
+            return f"{self.number} of {self.suit}"
+
+
+class GameSetup:
+    deck: List[Cards]
+    hands: Dict[int, List[Cards]]
+
+    def __init__(self, cards_per_player: int, n_of_players: int):
+        """Creates deck"""
+        self.deck = []
+        self.hands = {}
+        #self.hands = {[]}
+        for each_suit in range(0, 4):
+            for i in range(2, 15):
+                self.deck.append(Cards(i, each_suit))
+        self.shuffle() 
+        self.deal(cards_per_player, n_of_players)
+
+
+    def shuffle(self) -> None:
+        shuffled_deck: List[Cards] = []
+        while len(self.deck) > 0:    
+            shuffled_deck.append(self.deck.pop(randint(0, len(self.deck) - 1)))
+        self.deck = shuffled_deck
+
+
+    def deal(self, cards_per_player: int, n_of_players: int) -> None:
+        for n in range(0, n_of_players):
+            self.hands[n] = []
+            for _ in range(0, cards_per_player):
+                card: Cards = self.deck.pop(randint(0, len(self.deck) - 1))
+                self.hands[n].append(card)
+                
+
+    def empty_check_single(self, hand_number: int) -> bool:
+        if len(self.hands[hand_number]) == 0:
+            return True
+        return False          
+        
+
+def main() -> None:
+    game_one = GameSetup(2, 2)
+    print(game_one.hands)
+        
+
+if __name__ == "__main__":
+    main()
