@@ -1,0 +1,172 @@
+from personal.card_games.deck import GameSetup, Cards
+from personal.card_games import war_constants
+from typing import List
+import time
+
+
+class MoveWinner:
+    game: GameSetup
+    players: List[int] = []
+    winning_player: int = -1
+    tied_players: List[int] = []
+    winning_card: int = 0
+    card_bank: List[Cards] = []
+    tie_bank: List[Cards] = []
+    hand_number: int = 1
+
+
+    def __init__(self, n_players: int, n_cards_per: int):
+        self.game = GameSetup(n_cards_per, n_players)
+        self.player_setup(n_players)
+    
+
+    def player_setup(self, n_players: int) -> None:
+        self.players = []
+        for i in range(0, n_players):
+            if not self.game.empty_check_single(i):
+                self.players.append(i)
+            else:
+                self.players.append(-1)
+            self.tied_players.append(-1)          
+        
+
+    def one_hand(self) -> None:
+        self.winning_card = 0
+        tied_count: int = 0
+        for player in range(0, war_constants.NUM_PLAYERS):
+            if self.players[player] != -1 and len(self.game.hands[player]) != 0:
+                if self.winning_card < self.game.hands[player][0].number:
+                    self.winning_card = self.game.hands[player][0].number
+        for player in range(0, war_constants.NUM_PLAYERS):
+            if self.players[player] != -1 and len(self.game.hands[player]) != 0:
+                if self.game.hands[player][0].number == self.winning_card:
+                    self.winning_player = self.players[player]
+                    self.tied_players[player] = player
+                    tied_count += 1
+                self.card_bank.append(self.game.hands[player].pop(0))
+                if self.game.empty_check_single(player):
+                    self.players[player] = -1
+        if tied_count >= 2:
+            self.tie_sequence()
+            self.one_hand()
+        self.pot_assignment() 
+        
+
+    def tie_sequence(self) -> None:
+        self.players = self.tied_players
+        while len(self.card_bank) > 0:
+            self.tie_bank.append(self.card_bank.pop(0))
+        for player in range(0, war_constants.NUM_PLAYERS):
+            if self.players[player] != -1:
+                if self.min_cards() > 3:
+                    for _ in range(0, 3):
+                        self.tie_bank.append(self.game.hands[player].pop(0))
+                else:
+                    for _ in range(0, self.min_cards() - 1):
+                        self.tie_bank.append(self.game.hands[player].pop(0))    
+
+
+    def min_cards(self) -> int:
+        min_number = war_constants.TOTAL_CARDS
+        for player in range(0, war_constants.NUM_PLAYERS):
+            if self.players[player] != -1:
+                if min_number > len(self.game.hands[player]):
+                    min_number = len(self.game.hands[player])
+        return min_number
+
+    
+    def pot_assignment(self) -> None:
+        while len(self.card_bank) > 0:
+            self.game.hands[self.winning_player].append(self.card_bank.pop(0))
+        while len(self.tie_bank) > 0:
+            self.game.hands[self.winning_player].append(self.tie_bank.pop(0))
+
+    
+    def tick(self) -> None:
+        self.hand_number += 1
+
+
+    def sim_winner(self) -> int:
+        if self.active_players_check() == 1:
+            for player in range(0, war_constants.NUM_PLAYERS):
+                if self.players[player] != -1:
+                    return player
+        return -1
+
+
+    def active_players_check(self) -> int:
+        active_players: int = war_constants.NUM_PLAYERS
+        for player in range(0, war_constants.NUM_PLAYERS):
+            if len(self.game.hands[player]) == 0:
+                active_players -= 1
+                self.players[player] = -1
+        return active_players
+        
+
+class Simulation:
+    avg_hands: int = 0
+    max_hands: int = 0
+    min_hands: int = war_constants.INFINITE_STOP
+    infinite_hands: int = 0
+    wins_per_player: List[int] = []
+    win_percent_per_player: List[float] = []
+
+
+    def __init__(self) -> None:
+        for _ in range(0, war_constants.NUM_PLAYERS):
+            self.wins_per_player.append(0)
+            self.win_percent_per_player.append(0)
+
+
+    def sim(self) -> None:
+        war_sim = MoveWinner(war_constants.NUM_PLAYERS, war_constants.NUMCARDSPER)
+        active_players: int = war_constants.NUM_PLAYERS
+        while active_players > 1: 
+                war_sim.tick()
+                war_sim.player_setup(war_constants.NUM_PLAYERS)
+                war_sim.one_hand()
+                active_players = war_sim.active_players_check()
+                if war_sim.hand_number > war_constants.INFINITE_STOP:
+                    break
+        if war_sim.hand_number < 5000:
+            self.stats(war_sim)
+        else:
+            self.infinite_hands += 1
+    
+
+    def stats(self, war_sim: MoveWinner) -> None:
+        if war_sim.hand_number > self.max_hands:
+            self.max_hands = war_sim.hand_number
+        elif war_sim.hand_number < self.min_hands:
+            self.min_hands = war_sim.hand_number
+        self.avg_hands += (war_sim.hand_number - 1)
+        self.wins_per_player[war_sim.winning_player] += 1
+
+
+    def avg(self) -> None:
+        self.avg_hands = int(self.avg_hands / (war_constants.SIM_LENGTH - self.infinite_hands))
+        for player in range(0, war_constants.NUM_PLAYERS):
+            self.win_percent_per_player[player] = round(((self.wins_per_player[player] / (war_constants.SIM_LENGTH - self.infinite_hands)) * 100), 1)
+
+
+def main() -> None:
+    sim1 = Simulation()
+    start = time.time()
+    for i in range(0, war_constants.SIM_LENGTH):
+        sim1.sim()
+        if i % 1000 == 0:
+            print(i)
+    end = time.time()
+    sim1.avg()
+    print(f"Simulation time: {round(end - start, 2)} seconds")
+    print(f"Number of games: {war_constants.SIM_LENGTH}")
+    print(f"Avg hand length: {sim1.avg_hands}")
+    print(f"Infinite hands: {sim1.infinite_hands}")
+    print(f"Max hands: {sim1.max_hands}")
+    print(f"Min hands: {sim1.min_hands}")
+    print(f"Wins per player: {sim1.wins_per_player}")
+    print(f"Win percent per player: {sim1. win_percent_per_player}")
+
+
+if __name__ == "__main__":
+    main()
