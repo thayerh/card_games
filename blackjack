@@ -1,5 +1,5 @@
-from personal.card_games import blackjack_constants
-from personal.card_games.deck import *
+from Card_Games import blackjack_constants
+from Card_Games.deck import *
 from typing import List, Dict
 import sys
 import time
@@ -54,11 +54,6 @@ class MoveWinner:
             else:
                 return None
     
-
-    def sequence_input(self) -> None:
-        """Performs steps for a user-inputted game"""
-        ...
-
  
     def dealer_action(self) -> None:
         """Hits and stands for the dealer"""
@@ -182,7 +177,7 @@ class MoveWinner:
 
     def player_action_input(self, player: int, split: bool = False) -> None:
         """Logic behind choices for user-inputted action"""
-        print(f"Your hand: {self.game.hands[player]}")
+        self.card_repr_terminal(self.game.hands[player])
         if not split:
             d = input("Choices: hit, stand, double down, split. Choose: ")
             if d == "hit":
@@ -236,7 +231,55 @@ class MoveWinner:
                 self.player_action_input(player)
             else:
                 self.player_action_input(player, True)
-    
+
+
+    def card_repr_terminal(self, hand_raw: List[Cards]) -> None:
+        hand: List[List[str]] = []
+        for card in hand_raw:
+            num_int: int = (card.number)
+            num_str: str
+            suit: str | int = card.suit
+            if num_int == 14 or num_int == 1:
+                num_str = "A"
+            elif num_int == 13:
+                num_str = "K"
+            elif num_int == 12:
+                num_str = "Q"
+            elif num_int == 11:
+                num_str = "J"
+            else:
+                num_str = str(card.number)
+            if suit == "spades":
+                suit = "\U00002660"
+            elif suit == "hearts":
+                suit = "\U00002665"
+            elif suit == "diamonds":
+                suit = "\U00002666"
+            elif suit == "clubs":
+                suit = "\U00002663"
+            line1 = "*-----*  "
+            if num_int == 10:
+                line2 = f"|{num_str}   |  "
+            else:
+                line2 = f"|{num_str}    |  "
+            line3 = f"|{suit}    |  "
+            line4 = f"|    {suit}|  "
+            if num_int == 10:
+                line5 = f"|   {num_str}|  "
+            else:
+                line5 = f"|    {num_str}|  "
+            line6 = "*-----*  "
+            hand.append([line1, line2, line3, line4, line5, line6])
+        master_hand: List[str] = []
+        for i in range(0, 6):
+            tot_line: str = ""
+            for card in hand:
+                tot_line += card[i]
+            master_hand.append(tot_line)
+        for i in range(0, len(master_hand)):
+            print(master_hand[i])
+
+
 
     def hit(self, player: int) -> None:
         """Gives a player an additional card"""
@@ -328,9 +371,10 @@ class UserControlled:
     def run(self) -> None:
         self.move = MoveWinner()
         self.move.dealer_action()
-        print(f"Dealers upcard: {self.move.game.hands[0][0]}")
-        self.move.player_action_input(1, False)
-        print(f"Dealer's count: {self.move.player_counts[0]}")
+        if not self.test_dealer_blackjack():
+            print(f"Dealers upcard: {self.move.game.hands[0][0]}")
+            self.move.player_action_input(1, False)
+            print(f"Dealer's count: {self.move.player_counts[0]}")
         self.determine_winner_user()
         d = input("Play again? ")
         if d == "yes":
@@ -349,6 +393,13 @@ class UserControlled:
         else:
             print("Push!")
         print(f"Stack: {self.player_bank[1]}")
+
+    
+    def test_dealer_blackjack(self) -> bool:
+        self.move.count(0)
+        if self.move.player_counts[0] == 21:
+            return True
+        return False
 
 
 class IdealControlled:
@@ -393,8 +444,15 @@ class IdealControlled:
             labels.append(i)
         values = self.bank_over_time[0]
         pyplot.plot(labels, values)
-        pyplot.show()      
-    
+        pyplot.plot(labels, self.make_control(self.hand_num))
+        pyplot.show()    
+
+
+    def make_control(self, hands: int) -> List[int]:
+        control: List[int] = [blackjack_constants.PLAYER_BANKROLL]
+        for i in range(1, hands + 1):
+            control.append(int(blackjack_constants.PLAYER_BANKROLL - (0.005 * i * blackjack_constants.BET_SIZE)))
+        return control
 
     def sim(self) -> None:
         start = time.time()
