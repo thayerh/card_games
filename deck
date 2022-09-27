@@ -3,13 +3,12 @@ from typing import Dict, List
 from random import randint
 
 
-
 class Cards:
     suit: str
     number: int
     card: Dict[int, str] = {}
 
-    def __init__(self, number: int, i: int, suits: List[str] = ["spades", "clubs", "hearts", "diamonds"]):
+    def __init__(self, number: int, i: int , suits: List[str] = ["spades", "clubs", "hearts", "diamonds", "none"]):
         self.suit = suits[i]
         self.number = number
 
@@ -61,7 +60,7 @@ class GameSetup:
     def empty_check_single(self, hand_number: int) -> bool:
         if len(self.hands[hand_number]) == 0:
             return True
-        return False          
+        return False         
         
 
 def main() -> None:
