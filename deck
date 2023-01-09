@@ -4,13 +4,14 @@ from random import randint
 
 
 class Cards:
-    suit: str
     number: int
+    suit: str
     card: Dict[int, str] = {}
 
     def __init__(self, number: int, i: int , suits: List[str] = ["spades", "clubs", "hearts", "diamonds", "none"]):
-        self.suit = suits[i]
         self.number = number
+        self.suit = suits[i]
+        
 
     
     def __repr__(self) -> str:
@@ -64,6 +65,7 @@ class GameSetup:
         
 
 def main() -> None:
+    print("----Testing for 2 Random Hands----")
     game_one = GameSetup(2, 2)
     print(game_one.hands)
         
