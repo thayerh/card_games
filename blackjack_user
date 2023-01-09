@@ -1,0 +1,197 @@
+from PyQt5.QtWidgets import * 
+import blackjack_constants as bjc
+from blackjack import MoveWinner
+from typing import List
+from blackjack_pyqt import MyBJWindow
+from deck import *
+import sys
+
+
+def main():
+    app = QApplication(sys.argv)
+    u = UserControlled()
+    u.run()
+    
+    sys.exit(app.exec_())
+
+
+class UserControlled:
+    move: MoveWinner
+    player_bank: List[int] = [bjc.DEALER_BANKROLL, bjc.PLAYER_BANKROLL]
+
+    window: MyBJWindow
+    app: QApplication
+
+
+    def run(self):
+        self.move = MoveWinner()
+        self.app = QApplication(sys.argv)
+        self.window = MyBJWindow()
+        self.move.dealer_action()
+
+        if self.test_dealer_blackjack():
+            self.window.dealer_blackjack()
+        else:
+            self.window.add_cards([self.move.game.hands[0][0], bjc.BLANK_CARD],0)
+            self.window.add_cards(self.move.game.hands[1], 1)
+            self.player_action_input(1, False)
+        """
+        self.determine_winner_user()
+        d = input("Play again? ")
+        if d == "yes":
+            self.run()
+        else:
+            return None
+        """
+
+    def player_action_input(self, player: int, split: bool = False):
+        """Logic behind choices for user-inputted action"""
+        if not split:
+            d = input("Choices: hit, stand, double down, split. Choose: ")
+            if d == "hit":
+                self.move.hit(player)
+                #print(self.move.game.hands[player][len(self.move.game.hands[player]) - 1])
+            elif d == "stand":
+                self.move.count(player)
+                #print(f"Stand on {self.move.player_counts[player]}")
+                return None
+            elif d == "double down":
+                self.move.double_down()
+                self.move.hit(player)
+            elif d == "split":
+                self.move.split_user(player)
+                return None
+            else:
+                #print("Must choose one of the 4 actions.")
+                self.move.player_action_input(player)
+                return None
+        else:
+            d = input("Choices: hit, stand. Choose: ")
+            if d == "hit":
+                self.move.hit(player)
+                print(self.move.game.hands[player][len(self.move.game.hands[player]) - 1])
+            elif d == "stand":
+                self.move.count(player)
+                print(f"Stand on {self.move.player_counts[player]}")
+                if self.move.player_counts[player] == 21:
+                    print("Blackjack!")
+                elif self.move.player_counts[player] > 21:
+                    print("Bust!")
+                return None
+            elif d == "double down":
+                print("Error: can not double down on a split.")
+            elif d == "split":
+                print("Error: can not split twice.")
+                self.move.player_action_input(player, True)
+            else:
+                print("Must choose one of the 4 actions.")
+                self.move.player_action_input(player, True)
+                return None
+        self.move.count(player)
+        print(f"Count is {self.move.player_counts[player]}")
+        if self.move.player_counts[player] == 21:
+            print("Blackjack!")
+        elif self.move.player_counts[player] > 21:
+            print("Bust!")
+        else:
+            if not split:
+                self.move.player_action_input(player)
+            else:
+                self.move.player_action_input(player, True)
+
+    """
+    def card_repr_terminal(self, hand_raw: List[Cards]) -> None:
+        hand: List[List[str]] = []
+        for card in hand_raw:
+            num_int: int = (card.number)
+            num_str: str
+            suit: str | int = card.suit
+            if num_int == 14 or num_int == 1:
+                num_str = "A"
+            elif num_int == 13:
+                num_str = "K"
+            elif num_int == 12:
+                num_str = "Q"
+            elif num_int == 11:
+                num_str = "J"
+            elif num_int == 0:
+                num_str = " " #Dealers Facedown Card
+            else:
+                num_str = str(card.number)
+            if suit == "spades":
+                suit = "\U00002660"
+            elif suit == "hearts":
+                suit = "\U00002665"
+            elif suit == "diamonds":
+                suit = "\U00002666"
+            elif suit == "clubs":
+                suit = "\U00002663"
+            else:
+                suit = " " #Dealer's Facedown Card
+            line1 = "*-------*  "
+            if num_int == 10:
+                line2 = f"|{num_str}     |  "
+            else:
+                line2 = f"|{num_str}      |  "
+            line3 = f"|{suit}      |  "
+            line4 = "|       |  "
+            line5 = f"|      {suit}|  "
+            if num_int == 10:
+                line6 = f"|     {num_str}|  "
+            else:
+                line6 = f"|      {num_str}|  "
+            line7 = "*-------*  "
+            hand.append([line1, line2, line3, line4, line5, line6, line7])
+        master_hand: List[str] = []
+        for i in range(0, 7):
+            tot_line: str = ""
+            for card in hand:
+                tot_line += card[i]
+            master_hand.append(tot_line)
+        for i in range(0, len(master_hand)):
+            print(master_hand[i])
+    """
+    
+    
+    def determine_winner_user(self) -> None:
+        if 1+bjc.SPLIT_CONSTANT not in self.move.game.hands.keys():
+            if self.move.determine_winner(1) == 1:
+                print("You win!")
+                self.player_bank[1] += self.move.bet
+            elif self.move.determine_winner(1) == -1:
+                print("You lose!")
+                self.player_bank[1] -= self.move.bet
+            else:
+                print("Push!")
+        else:
+            h1, h2 = self.move.determine_winner(1), self.move.determine_winner(1+bjc.SPLIT_CONSTANT)
+            if h1 == h2 == 1: #Both win
+                print("You win!")
+                self.player_bank[1] += self.move.bet
+            elif (h1 == 1 or h2 == 1):
+                if (h1 == 0 or h2 == 0): #one win one push
+                    print("One win, one push!")
+                    self.player_bank[1] += int(self.move.bet*.5)
+                elif (h1 == -1 or h2 == -1): #one win one loss
+                    print("Push!")
+            elif (h1 == 0 or h2 == 0):
+                if (h1 == -1 or h2 == -1): #One push one loss
+                    print("One push, one loss!")
+                    self.player_bank[1] -= int(self.move.bet * .5)
+                else: #Both push
+                    print("Push!")
+            else: #Both lose
+                print("You lose!")
+                self.player_bank[1] -= self.move.bet
+        print(f"Stack: {self.player_bank[1]}")
+
+    
+    def test_dealer_blackjack(self) -> bool:
+        self.move.count(0)
+        if self.move.player_counts[0] == 21:
+            return True
+        return False
+
+
+if __name__ == "__main__":
+    main()
