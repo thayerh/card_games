@@ -1,0 +1,77 @@
+import blackjack_constants as bjc
+from blackjack import MoveWinner
+from typing import List
+from matplotlib import pyplot as plt
+import time
+
+
+
+def main():
+    id = IdealControlled()
+    id.sim()
+
+class IdealControlled:
+    move: MoveWinner
+    player_bank: List[float] = []
+    dealer_bank: float = bjc.DEALER_BANKROLL
+
+    hand_num: int = 0
+
+    bank_over_time: List[List[int]] = [[]]
+
+
+    def __init__(self) -> None:
+        self.player_bank.append(self.dealer_bank)
+        for _ in range(1, bjc.NUM_PLAYERS + 1):
+            self.player_bank.append(bjc.PLAYER_BANKROLL)
+
+    
+    def run(self) -> None:
+        self.move = MoveWinner()
+        self.move.dealer_action()
+        for player in range(1, bjc.NUM_PLAYERS + 1):
+            self.move.sequence_perfect(player)
+            self.player_bank[player] += self.move.winners[player]
+            self.bank_over_time[0].append(int(self.player_bank[player]))
+            self.hand_num += 1
+            
+
+    
+    def stats(self, time: float) -> None:
+        print(f"Simulated {self.hand_num} hands in {time} seconds.")
+        print(f"Player 1 stack: {int(self.player_bank[1])}")
+        self.chart_data()
+
+
+    def chart_data(self) -> None:
+        plt.title("Blackjack stack over time")
+        plt.xlabel("Hand")
+        plt.ylabel("Stack")
+        labels: List[int] = []
+        for i in range(0, self.hand_num + 1):
+            labels.append(i)
+        values = self.bank_over_time[0]
+        plt.plot(labels, values)
+        plt.plot(labels, self.make_control(self.hand_num))
+        plt.show()    
+
+
+    def make_control(self, hands: int) -> List[int]:
+        control: List[int] = [bjc.PLAYER_BANKROLL]
+        for i in range(1, hands + 1):
+            control.append(int(bjc.PLAYER_BANKROLL - (0.005 * i * bjc.BET_SIZE)))
+        return control
+
+    def sim(self) -> None:
+        start = time.time()
+        self.bank_over_time[0].append(bjc.PLAYER_BANKROLL)
+        for _ in range(0, bjc.SIM_LENGTH):
+            self.run()
+            if self.player_bank[1] <= 0 or self.player_bank[1] >= bjc.PLAYER_BANKROLL * 2:
+                break
+        stop = time.time()
+        self.stats(round(stop - start, 3))
+
+
+if __name__ == "__main__":
+    main()
