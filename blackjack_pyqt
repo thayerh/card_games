@@ -1,0 +1,176 @@
+from PyQt5.QtWidgets import * 
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import * 
+from PyQt5.QtCore import * 
+import sys
+from deck import *
+import blackjack_constants as bjc
+from blackjack import MoveWinner
+from typing import List
+
+
+def main():
+    app = QApplication(sys.argv)
+    win = MyBJWindow()
+    win.initGame()
+
+    sys.exit(app.exec_())
+
+
+class MyBJWindow(QMainWindow):
+    nDealerCards: int = 0
+    nPlayerCards: int = 0
+    lDealerCards: Dict[int, QLabel] = {}
+    lPlayerCards: Dict[int, QLabel] = {}
+
+    move: MoveWinner
+
+    def __init__(self):
+        self.move = MoveWinner()
+        super(QMainWindow, self).__init__()
+        self.setGeometry(800,100,1000,800)
+        self.setWindowTitle("Blackjack!")
+        self.acceptDrops()
+        self.initUI()
+        self.show()
+
+    def initUI(self):
+        self.lPCardsHead = QLabel(self)
+        self.lPCardsHead.setText("Your cards: ")
+        self.lPCardsHead.move(50,50)
+        self.lPCardsHead.adjustSize()
+
+        self.lDCardsHead = QLabel(self)
+        self.lDCardsHead.setText("Dealer's cards: ")
+        self.lDCardsHead.move(200,50)
+        self.lDCardsHead.adjustSize()
+
+        self.lPCount = QLabel(self)
+        self.lPCount.setText("Your Count")
+        self.lPCount.move(350,50)
+        self.lPCount.adjustSize()
+
+        self.lDCount = QLabel(self)
+        self.lDCount.setText("Dealer's Count")
+        self.lDCount.move(500,50)
+        self.lDCount.adjustSize()
+
+        self.bHit = QPushButton(self)
+        self.bHit.setText("Hit")
+        self.bHit.move(0,0)
+        self.bHit.conn
+
+        self.bStand = QPushButton(self)
+        self.bStand.setText("Stand")
+        self.bStand.move(100,0)
+
+        self.bSplit = QPushButton(self)
+        self.bSplit.setText("Split")
+        self.bSplit.move(200,0)
+
+        self.bDoubleDown = QPushButton(self)
+        self.bDoubleDown.setText("Double Down")
+        self.bDoubleDown.move(300,0)
+
+        self.initCards(0)
+        self.initCards(1)
+    
+    def initCards(self, hand: int):
+        """Makes empty card labels"""
+        if hand == 0:
+            hand: Dict[int, QLabel] = self.lDealerCards
+            yPos = 200
+        elif hand == 1:
+            hand: Dict[int, QLabel] = self.lPlayerCards
+            yPos = 400
+        for cNum in range(bjc.NUM_CARD_LABELS):
+            hand[cNum] = QLabel(self)
+            hand[cNum].setGeometry(cNum*bjc.CARD_WIDTH + (cNum+1)*10, yPos, bjc.CARD_WIDTH, bjc.CARD_HEIGHT)
+            #hand[cNum].setStyleSheet("border: 2px solid black;")
+
+    def initGame(self):
+        self.addCards(self.move.game.hands[1],1)
+        if self.testDealerBlackjack():
+            self.dealerBlackjack()
+        else:
+            self.dealerOneCard()
+            self.move.dealer_action()
+     
+    def dealerOneCard(self):
+        """Initializes dealer's cards and count to GUI"""
+        num = self.move.game.hands[0][0].number
+        if num == 14:
+            num = 11
+        elif num > 10:
+            num = 10
+        self.lDCount.setText(f"Dealer's Count: {num}")
+        self.lDCount.adjustSize()
+        self.addCards([self.move.game.hands[0][0],Cards(0,4)],0)
+        
+    def hit(self):
+        ...
+
+    def stand(self):
+        ...
+
+    def testDealerBlackjack(self):
+        if self.move.count(0)==21:
+            return True
+        return False
+
+    def dealerBlackjack(self):
+        self.addCards(self.move.game.hands[0], 0)
+        self.lDCount.setText(f"Dealer's Count: 21")
+        self.lDCount.adjustSize()
+        print("Dealer blackjack")
+
+    def win(self):
+        ...
+
+    def addCards(self, cards: List[Cards], playerNum: int):
+        """Taking in new cards and adding pixmap to existing blank card labels"""
+        if playerNum == 0:
+            hand: Dict[int, QLabel] = self.lDealerCards
+            cNum = self.nDealerCards
+        elif playerNum == 1:
+            hand: Dict[int, QLabel] = self.lPlayerCards
+            cNum = self.nPlayerCards
+        #print("Init cnum: " + str(cNum))
+        for card in cards:
+            hand[cNum].setStyleSheet("border: 2px solid black;")
+            
+            if card.number == 0:
+                hand[cNum].setPixmap(QPixmap("IMG_2485.jpg").scaled(100,145))
+                #print("IMG_2485.jpg")
+            elif card.number < 11:
+                #print(f"PNG-cards/{card.number}_of_{card.suit}.png")
+                hand[cNum].setPixmap(QPixmap(f"PNG-cards/{card.number}_of_{card.suit}.png").scaled(100,145))
+            else:
+                if card.number == 11:
+                    num = "jack"
+                elif card.number == 12:
+                    num = "queen"
+                elif card.number == 13:
+                    num = "king"
+                elif card.number == 14:
+                    num = "ace"
+                else:
+                    raise IndexError
+                #print(f"PNG-cards/{num}_of_{card.suit}.png")
+                hand[cNum].setPixmap(QPixmap(f"PNG-cards/{num}_of_{card.suit}.png").scaled(100,145))
+
+            cNum += 1
+        #print(cNum)
+        if playerNum == 0:
+            self.nDealerCards = cNum
+            #print("Dealer cards: " + str(self.nDealerCards))
+        elif playerNum == 1:
+            self.nPlayerCards = cNum
+            #print("Player cards: " + str(self.nPlayerCards))
+        
+
+
+
+
+if __name__ == "__main__":
+    main()
