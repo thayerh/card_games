@@ -1,5 +1,5 @@
 """Constants for personal.card_games.blackjack"""
-from Card_Games.deck import Cards
+from deck import Cards
 
 NUM_PLAYERS: int = 1
 # Excludes dealer
@@ -11,8 +11,12 @@ PLAYER_BANKROLL: int = 1000
 
 BET_SIZE: int = 1
 
-SIM_LENGTH: int = 1000000000
+SIM_LENGTH: int = 1000
 
 SPLIT_CONSTANT: int = 27
 
 BLANK_CARD: Cards = Cards(0, 4)
+
+CARD_WIDTH: int = 100
+CARD_HEIGHT: int = 145
+NUM_CARD_LABELS: int = 8
